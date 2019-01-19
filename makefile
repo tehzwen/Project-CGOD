@@ -1,28 +1,27 @@
-
-CFLAGS = -Wall -std=c99
-CC = gcc
+CC=gcc
+CFLAGS=-Wall -g
+LDFLAGS=-lncurses -lvlc
 
 all: game
 
 game:
-	$(CC) $(CFLAGS) -o game game.c -lncurses -lvlc
+	$(CC) $(CFLAGS) -o game game.c $(LDFLAGS)
 
-textClient:
-	gcc -o textClient clientTest.c 
+textClient: clientTest.c
+	$(CC) $(CFLAGS) -o $@ -c $^ $(LDFLAGS)
 
-textServer:
-	gcc -o textServer serverTest.c 
+textServer: serverTest.c
+	$(CC) $(CFLAGS) -o $@ -c $^ $(LDFLAGS)
 
 bufferManagement: bufferManagement.c
-	$(CC) $(CFLAGS) -c bufferManagement.c
+	$(CC) $(CFLAGS) -o $@ -c $^ $(LDFLAGS)
 
-packetServer: bufferManagement.c
-	$(CC) $(CFLAGS) -o packetServer packetServer.c bufferManagement.c
+packetServer: bufferManagement.c packetServer.c
+	$(CC) $(CFLAGS) -o $@ -c $^ $(LDFLAGS)
 
-packetClient: bufferManagement.c
-	$(CC) $(CFLAGS) -o packetClient packetClient.c bufferManagement.c
+packetClient: bufferManagement.c packetClient.c
+	$(CC) $(CFLAGS) -o $@ -c $^ $(LDFLAGS)
 
 clean:
-	rm *.o
-	rm packetServer
-	rm packetClient
+	$(RM) *.o
+	$(RM) game packetServer packetClient
