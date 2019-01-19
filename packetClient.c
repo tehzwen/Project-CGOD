@@ -42,9 +42,8 @@ int main()
     // Filling server information
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(PORT);
-    servaddr.sin_addr.s_addr = INADDR_ANY;
-    //servaddr.sin_addr.s_addr = inet_addr("142.244.172.174");
-    
+    //servaddr.sin_addr.s_addr = INADDR_ANY;
+    servaddr.sin_addr.s_addr = inet_addr("192.168.2.72");
 
     socklen_t len;
     ssize_t n;
@@ -58,29 +57,29 @@ int main()
     strcpy(sendPack.userName, hello);
     sendPack.active = 1;
 
-    sendto(sockfd, (const packet*)&sendPack, sizeof(sendPack),
-           MSG_CONFIRM, (const struct sockaddr *)&servaddr,
-           sizeof(servaddr));
-    printf("Hello message sent.\n");
+    for (;;)
+    {
+        sendto(sockfd, (const packet *)&sendPack, sizeof(sendPack),
+               MSG_CONFIRM, (const struct sockaddr *)&servaddr,
+               sizeof(servaddr));
+        printf("Hello message sent.\n");
 
-    n = recvfrom(sockfd,  (char *)receiveBuffer, sizeof(receiveBuffer),
-                 MSG_WAITALL, (struct sockaddr *)&servaddr,
-                 &len);
+        n = recvfrom(sockfd, (char *)receiveBuffer, sizeof(receiveBuffer),
+                     MSG_WAITALL, (struct sockaddr *)&servaddr,
+                     &len);
 
-    
+        printf("%ld\n", n);
 
-    printf("%ld\n", n);
-
-    printf("%d\n", receiveBuffer[0]);
+        printf("%d\n", receiveBuffer[0]);
+    }
 
     int arraySize = getArraySize(receiveBuffer);
     printf("SIZE: %d\n", arraySize);
 
-    if (arraySize > 0){
+    if (arraySize > 0)
+    {
         printArray(receiveBuffer, arraySize);
     }
-
-
 
     //printf("Server : %x\n", buffer[3]);
     //printBuffer(buffer);
@@ -90,27 +89,3 @@ int main()
     close(sockfd);
     return 0;
 }
-
-/*
-
-
-    printf("Enter what you want to send to the server: ");
-    scanf("%[^\n]s", hello);
-
-    sendto(sockfd, (const char *)hello, strlen(hello),
-           MSG_CONFIRM, (const struct sockaddr *)&servaddr,
-           sizeof(servaddr));
-    printf("Hello message sent.\n");
-
-    n = recvfrom(sockfd, receivePacket, sizeof(*receivePacket),
-                 MSG_WAITALL, (struct sockaddr *)&servaddr,
-                 &len);
-    buffer[n] = '\0';
-    //printf("Server : %x\n", buffer[3]);
-    //printBuffer(buffer);
-    printf("%s\n", receivePacket->userName);
-
-    memset(hello, 0, sizeof(hello));
-
-    close(sockfd);
-    return 0;*/

@@ -16,7 +16,7 @@ textServer: serverTest.c
 bufferManagement: bufferManagement.c
 	$(CC) $(CFLAGS) -o $@ -c $^ $(LDFLAGS)
 
-packetServer: bufferManagement.c packetServer.c
+packetServer: bufferManagement.c serverGameLogic.c packetServer.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 packetClient: bufferManagement.c packetClient.c

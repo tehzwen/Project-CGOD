@@ -8,81 +8,49 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "bufferManagement.h"
+#include "serverGameLogic.h"
 #include <stdbool.h>
 
 #define PORT 3000
 #define MAXLINE 1024
 
-typedef struct
+// Initialize the server, returns the socket file descriptor of the binded port.
+int init_server()
 {
-    packet *array;
-    size_t used;
-    size_t size;
+	int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    printf("%d\n", sockfd);
+	struct sockaddr_in servaddr;
 
-} Array;
+	// Creating server socket file descriptor
+	if (sockfd < 0) {
+		perror("socket creation failed");
+		exit(EXIT_FAILURE);
+	}
 
-//helper function to determine if packet already exists with that username in
-//our array
-bool checkIfPlayerPacketExists(Array *a, char *userName)
-{
-    for (int x = 0; x < a->used; x++)
-    {
-        printf("%s vs %s\n", a->array[x].userName, userName);
+	memset(&servaddr, 0, sizeof(servaddr));
 
-        if (strcmp(a->array[x].userName, userName) == 0)
-        {
-            return true;
-        }
-    }
-    return false;
-}
+	// Filling server information
+	servaddr.sin_family = AF_INET; // IPv4
+	servaddr.sin_addr.s_addr = INADDR_ANY;
+	servaddr.sin_port = htons(PORT);
 
-packet getPacketFromArray(Array *a, char *userName)
-{
-    packet temp;
+	int bind_ret = bind(sockfd, (const struct sockaddr *)&servaddr,
+			    sizeof(servaddr));
 
-    if (checkIfPlayerPacketExists(a, userName) == true)
-    {
-        for (int x = 0; x < a->used; x++)
-        {
-            printf("%s vs %s\n", a->array[x].userName, userName);
+	// Bind the socket with the server address
+	if (bind_ret < 0) {
+		perror("bind failed");
+		close(sockfd);
+		exit(EXIT_FAILURE);
+	}
 
-            if (strcmp(a->array[x].userName, userName) == 0)
-            {
-                printf("here\n");
-                temp = a->array[x];
-                return temp;
-            }
-        }
-    } else{
-
-        return temp;
-    }
-
-    
-}
-
-void addToArray(Array *a, packet packVal)
-{
-    if (a->used == a->size)
-    {
-        a->size *= 2;
-        a->array = (packet *)realloc(a->array, a->size * sizeof(packet));
-    }
-    a->array[a->used++] = packVal;
-}
-
-void initArray(Array *a, size_t initialSize)
-{
-    a->size = initialSize;
-    a->array = (packet *)malloc(initialSize * sizeof(packet));
-    a->used = 0;
+	return sockfd;
 }
 
 int main(int argc, char *argv[])
 {
     int sockfd;
-    char buffer[MAXLINE];
+    char test[20] = "zach";
     //char *hostaddrp;
     //struct hostent *hostp;
     struct sockaddr_in servaddr, cliaddr;
@@ -101,50 +69,38 @@ int main(int argc, char *argv[])
     //add array size to front of buffer
     memcpy(&(packetBuffer), &packetBufferSize, sizeof(packetBufferSize));
 
-
-/*    
-    packet newPack = {1, 1, 5, "zachary"};
-    packet newPack2 = {1, 2, 10, "daniel"};
-    packet newPack3 = {1, 3, 4, "dave"};
-*/
-
-
-    //test adding to packetArray
-    /*addToArray(&playerPacketArray, newPack);
-    packet Test1 = getPacketFromArray(&playerPacketArray, "zachary");
-    printf("HERE: \n");
-    printPacket(Test1);*/
-
     int tempVal = getArraySize(packetBuffer);
     printf("SIZE: %d\n", tempVal);
 
-    /*
-    addPacketToBuffer(packetBuffer, newPack, &packetBufferIndex);
-    addPacketToBuffer(packetBuffer, newPack2, &packetBufferIndex);
-    addPacketToBuffer(packetBuffer, newPack3, &packetBufferIndex);*/
-
     // Creating socket file descriptor
+    
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     {
         perror("socket creation failed");
         exit(EXIT_FAILURE);
     }
 
+    
     memset(&servaddr, 0, sizeof(servaddr));
     memset(&cliaddr, 0, sizeof(cliaddr));
 
+    
     // Filling server information
     servaddr.sin_family = AF_INET; // IPv4
     servaddr.sin_addr.s_addr = INADDR_ANY;
     servaddr.sin_port = htons(PORT);
 
     // Bind the socket with the server address
+    
     if (bind(sockfd, (const struct sockaddr *)&servaddr,
              sizeof(servaddr)) < 0)
     {
         perror("bind failed");
         exit(EXIT_FAILURE);
     }
+
+    //sockfd = init_server();
+
     socklen_t len;
     ssize_t n;
 
@@ -156,27 +112,42 @@ int main(int argc, char *argv[])
                      &len);
 
         printf("%ld\n", n);
+
+
         //print string message from client
         //printf("server received %ld/%ld bytes\n", sizeof(receivePacket), n);
         if (n > 0)
         {
             printf("Received Packet!\n");
             printPacket(*receivePacket);
+
+            //if the player doesn't exist then we append to the playerPacketArray
             if (!checkIfPlayerPacketExists(&playerPacketArray, receivePacket->userName)){
                 addToArray(&playerPacketArray, *receivePacket);
+                //packet replyLoginPacket = {3,0,0,"server"};
+                //sendto(sockfd, (const char *)test, sizeof(test), MSG_CONFIRM, (const struct sockaddr *)&cliaddr, len);
+
             }
+            //if they do exist then we assume the game is running and this player
+            //wants the information for all the other clients back
             else{
+
                 //player exists, update their information and check for no cheating
 
             }
             
         }
 
-        //send packetBuffer Array to client
-        sendto(sockfd, (const char *)packetBuffer, sizeof(packetBuffer), MSG_CONFIRM, (const struct sockaddr *)&cliaddr, len);
-        printf("Hello message sent.\n");
+        //print the playerarray if it is not empty
 
-        memset(buffer, 0, sizeof(buffer));
+        if (playerPacketArray.used > 0){
+            printf("%s\n", playerPacketArray.array[0].userName);
+        }
+
+        
+        //send packetBuffer Array to client
+        int y = sendto(sockfd, (const char *)packetBuffer, sizeof(packetBuffer), MSG_CONFIRM, (const struct sockaddr *)&cliaddr, sizeof(cliaddr));
+        printf("Hello message sent %d.\n", y);
     }
 
     return 0;
