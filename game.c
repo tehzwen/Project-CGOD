@@ -1,260 +1,186 @@
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
 #include <unistd.h>
 #include <ncurses.h>
-#include <vlc/vlc.h>
 
-typedef struct
+#include "game.h"
+
+WINDOW *mainwin;
+int oldcur;
+
+void initObjArray(gameObject *objArray)
 {
-    int yCoord;
-    int xCoord;
-    char *objectString;
-} gameObject;
-
-//takes boolean pointers and changes values depending on surroundings
-void checkForObstacles(bool *up, bool *down, bool *left, bool *right, int y, int x)
-{
-
-    char upChar = mvinch(y - 2, x);
-    char downChar = mvinch(y + 2, x);
-    char leftChar = mvinch(y, x - 2);
-    char rightChar = mvinch(y, x + 2);
-
-    if (upChar == ' ')
+    for (int i = 0; i < 10; i++)
     {
-        *up = true;
-    }
-    else
-    {
-        *up = false;
-    }
-    if (downChar == ' ')
-    {
-        *down = true;
-    }
-    else
-    {
-        *down = false;
-    }
-    if (leftChar == ' ')
-    {
-        *left = true;
-    }
-    else
-    {
-        *left = false;
-    }
-    if (rightChar == ' ')
-    {
-        *right = true;
-    }
-    else
-    {
-        *right = false;
+        gameObject temp = {5 + i, 4 + i, "(&)"};
+        objArray[i] = temp;
     }
 }
 
-void refreshScreen(WINDOW *win)
+void refreshScreen(void)
 {
-    box(win, 0, 0);
-    wrefresh(win);
+    box(mainwin, 0, 0);
+    wrefresh(mainwin);
     refresh();
 }
 
-bool checkIfGameObjectIsInBounds(gameObject object, int y, int x, int yMax, int xMax)
+void movePlayer(int y, int x, char *val)
 {
+    move(y, x);
+    printw("%s", val);
+    refresh();
+}
 
-    if (object.yCoord + y < yMax && object.xCoord + x < xMax && object.yCoord + y > 0 && object.xCoord + x > 0)
-    {
+void checkObstacle(bool *up, bool *down, bool *left, bool *right, int y, int x)
+{
+    chtype upChar = mvinch(y - 2, x);
+    chtype downChar = mvinch(y + 2, x);
+    chtype leftChar = mvinch(y, x - 2);
+    chtype rightChar = mvinch(y, x + 2);
+
+    if (upChar == ' ')
+        *up = true;
+    else
+        *up = false;
+    if (downChar == ' ')
+        *down = true;
+    else
+        *down = false;
+    if (leftChar == ' ')
+        *left = true;
+    else
+        *left = false;
+    if (rightChar == ' ')
+        *right = true;
+    else
+        *right = false;
+}
+
+bool checkObjInbounds(gameObject obj, int y, int x, int yMax, int xMax)
+{
+    if (obj.yCoord + y < yMax && obj.xCoord + x < xMax && obj.yCoord + y > 0 && obj.xCoord + x > 0)
         return true;
-    }
 
     return false;
 }
 
-void moveToCoordAndPrintString(int y, int x, char *value)
+void printObj(gameObject obj, int y, int x)
 {
-    move(y, x);
-    printw("%s", value);
-    refresh();
+    movePlayer(obj.yCoord + y, obj.xCoord + x, obj.objectString);
 }
 
-//y and x are added to the gameObjects original location in the game
-void printGameObjectToScreen(gameObject object, int y, int x)
+int checkChar(char ch)
 {
-    moveToCoordAndPrintString(object.yCoord + y, object.xCoord + x, object.objectString);
+    if (ch == 'q')
+        return QUIT;
+    else if (ch == 'w' || ch == 65)
+        return UP;
+    else if (ch == 's' || ch == 66)
+        return DOWN;
+    else if (ch == 'a' || ch == 68)
+        return LEFT;
+    else if (ch == 'd' || ch == 67)
+        return RIGHT;
+    return -1;
 }
 
-int main()
+int runClient(void)
 {
-
-    libvlc_instance_t *inst;
-    libvlc_media_player_t *mp;
-    libvlc_media_t *m;
-
-    inst = libvlc_new(0, NULL);
-    m = libvlc_media_new_path(inst, "detective.wav");
-
-    mp = libvlc_media_player_new_from_media(m);
-
-    libvlc_media_release(m);
-
-    libvlc_media_player_play(mp);
-
-    WINDOW *mainwin;
-
-    int width, height;
+    char ch;
+    char gun = '-';
+    int x = 0, y = 0;
+    int yMax, xMax, startY, startX, gy, gx, direction;
     bool canMoveUp, canMoveDown, canMoveLeft, canMoveRight;
 
-    height = 50;
-    width = 200;
-
-    initscr();
-
-    mainwin = newwin(height, width, 0, 0);
-
-    int yMax, xMax;
+    gameObject rock = {10, 20, "(_)"};
+    gameObject *objArray;
 
     getmaxyx(mainwin, yMax, xMax);
 
-    int startX = xMax / 2;
-    int startY = yMax / 2;
+    startX = xMax / 2;
+    startY = yMax / 2;
+    gx = startX - 1;
+    gy = startY;
+    
+    objArray = calloc(10, sizeof(gameObject));
+    initObjArray(objArray);
 
-    refreshScreen(mainwin);
-
-    int x = 0;
-    int y = 0;
-    char gun = '-';
-    int gx = startX - 1;
-    int gy = startY;
-
-    gameObject rock = {10, 20, "(_)"};
-    gameObject *objectArray;
-
-    objectArray = calloc(10, sizeof(gameObject));
-
-    for (int i = 0; i < 10; i++)
+    while(1)
     {
-        gameObject temp = {5 + i, 4 + i, "(&)"};
-        objectArray[i] = temp;
-    }
-
-    while (1)
-    {
-        refreshScreen(mainwin);
-        curs_set(0);
-
+        refreshScreen();
         move(startY, startX);
         printw("*");
 
-        if (checkIfGameObjectIsInBounds(rock, y, x, yMax, xMax))
-        {
-            printGameObjectToScreen(rock, y, x);
-        }
+        if (checkObjInbounds(rock, y, x, yMax, xMax))
+            printObj(rock, y, x);
 
         for (int j = 0; j < 10; j++)
         {
-            if (checkIfGameObjectIsInBounds(objectArray[j], y, x, yMax, xMax))
-            {
-                printGameObjectToScreen(objectArray[j], y, x);
-            }
+            if (checkObjInbounds(objArray[j], y, x, yMax, xMax))
+                printObj(objArray[j], y, x);
         }
+
         refresh();
-
-        checkForObstacles(&canMoveUp, &canMoveDown, &canMoveLeft, &canMoveRight, startY, startX);
-
+        checkObstacle(&canMoveUp, &canMoveDown, &canMoveLeft, &canMoveRight, startY, startX);
         move(gy, gx);
-
         printw("%c", gun);
+
         refresh();
-
-        char c = getch();
-
+        ch = getch();
         clear();
 
-        if (c == 'q')
+        direction = checkChar(ch);
+
+        if (direction == QUIT)
         {
             break;
-        }
-        //move up
-        else if (c == 'w' || c == 65)
+        } else if (direction == UP && canMoveUp)
         {
-
-            if (canMoveUp)
-            {
-                y++;
-                gx = startX;
-                gy = startY - 1;
-                gun = '|';
-            }
-            else
-            {
-                beep();
-            }
-        }
-        //move down
-        else if (c == 's' || c == 66)
+            y++;
+            gx = startX;
+            gy = startY - 1;
+            gun = '|';
+        } else if (direction == DOWN && canMoveDown)
         {
-
-            if (canMoveDown)
-            {
-                y--;
-                gx = startX;
-                gy = startY + 1;
-                gun = '|';
-            }
-            else
-            {
-                beep();
-            }
-        }
-
-        //move left
-        else if (c == 'a' || c == 68)
+            y--;
+            gx = startX;
+            gy = startY + 1;
+            gun = '|';
+        } else if (direction == LEFT && canMoveLeft)
         {
-
-            if (canMoveLeft)
-            {
-                x++;
-                gx = startX - 1;
-                gy = startY;
-                gun = '-';
-            }
-            else
-            {
-                beep();
-            }
-        }
-
-        //move right
-        else if (c == 'd' || c == 67)
+            x++;
+            gx = startX - 1;
+            gy = startY;
+            gun = '-';
+        } else if (direction == RIGHT && canMoveRight)
         {
-
-            if (canMoveRight)
-            {
-                x--;
-                gx = startX + 1;
-                gy = startY;
-                gun = '-';
-            }
-            else
-            {
-                beep();
-            }
+            x--;
+            gx = startX + 1;
+            gy = startY;
+            gun = '-';
+        } else{
+            beep();
         }
 
-        refreshScreen(mainwin);
+        refreshScreen();
     }
-
-    libvlc_media_player_stop(mp);
-    libvlc_media_player_release(mp);
-
-    libvlc_release(inst);
-
-    free(objectArray);
+    free(objArray);
     delwin(mainwin);
     endwin();
-    refresh();
+
+    return 0;
+}
+
+int main(void)
+{
+    initscr();
+
+    mainwin = newwin(0, 0, 0, 0);
+    oldcur = curs_set(0);
+
+    runClient();
 
     return EXIT_SUCCESS;
 }

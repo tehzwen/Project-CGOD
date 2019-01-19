@@ -1,10 +1,10 @@
 CC=gcc
 CFLAGS=-Wall -g
-LDFLAGS=-lncurses -lvlc
+LDFLAGS=-lncurses
 
 all: game
 
-game:
+game: game.c game.h
 	$(CC) $(CFLAGS) -o game game.c $(LDFLAGS)
 
 textClient: clientTest.c
