@@ -24,4 +24,4 @@ packetClient: bufferManagement.c packetClient.c
 
 clean:
 	$(RM) *.o
-	$(RM) game packetServer packetClient
+	$(RM) game packetServer packetClient textClient textServer bufferManagement
