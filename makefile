@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -g
+CFLAGS=-Wall -g -Wno-unused-variable -pthread
 LDFLAGS=-lncurses -lvlc
 
 all: game
