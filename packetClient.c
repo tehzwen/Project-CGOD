@@ -43,6 +43,8 @@ int main()
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(PORT);
     servaddr.sin_addr.s_addr = INADDR_ANY;
+    //servaddr.sin_addr.s_addr = inet_addr("142.244.172.174");
+    
 
     socklen_t len;
     ssize_t n;
@@ -50,14 +52,18 @@ int main()
     printf("Enter your username: ");
     scanf("%[^\n]s", hello);
 
-    packet sendPack = {1,0,0,"bob"};
+    packet sendPack;
+    sendPack.x = 0;
+    sendPack.y = 0;
+    strcpy(sendPack.userName, hello);
+    sendPack.active = 1;
 
     sendto(sockfd, (const packet*)&sendPack, sizeof(sendPack),
            MSG_CONFIRM, (const struct sockaddr *)&servaddr,
            sizeof(servaddr));
     printf("Hello message sent.\n");
 
-    n = recvfrom(sockfd, (char *)receiveBuffer, sizeof(receiveBuffer),
+    n = recvfrom(sockfd,  (char *)receiveBuffer, sizeof(receiveBuffer),
                  MSG_WAITALL, (struct sockaddr *)&servaddr,
                  &len);
 
@@ -70,7 +76,11 @@ int main()
     int arraySize = getArraySize(receiveBuffer);
     printf("SIZE: %d\n", arraySize);
 
-    printArray(receiveBuffer, arraySize);
+    if (arraySize > 0){
+        printArray(receiveBuffer, arraySize);
+    }
+
+
 
     //printf("Server : %x\n", buffer[3]);
     //printBuffer(buffer);

@@ -8,9 +8,76 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "bufferManagement.h"
+#include <stdbool.h>
 
 #define PORT 3000
 #define MAXLINE 1024
+
+typedef struct
+{
+    packet *array;
+    size_t used;
+    size_t size;
+
+} Array;
+
+//helper function to determine if packet already exists with that username in
+//our array
+bool checkIfPlayerPacketExists(Array *a, char *userName)
+{
+    for (int x = 0; x < a->used; x++)
+    {
+        printf("%s vs %s\n", a->array[x].userName, userName);
+
+        if (strcmp(a->array[x].userName, userName) == 0)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+packet getPacketFromArray(Array *a, char *userName)
+{
+    packet temp;
+
+    if (checkIfPlayerPacketExists(a, userName) == true)
+    {
+        for (int x = 0; x < a->used; x++)
+        {
+            printf("%s vs %s\n", a->array[x].userName, userName);
+
+            if (strcmp(a->array[x].userName, userName) == 0)
+            {
+                printf("here\n");
+                temp = a->array[x];
+                return temp;
+            }
+        }
+    } else{
+
+        return temp;
+    }
+
+    
+}
+
+void addToArray(Array *a, packet packVal)
+{
+    if (a->used == a->size)
+    {
+        a->size *= 2;
+        a->array = (packet *)realloc(a->array, a->size * sizeof(packet));
+    }
+    a->array[a->used++] = packVal;
+}
+
+void initArray(Array *a, size_t initialSize)
+{
+    a->size = initialSize;
+    a->array = (packet *)malloc(initialSize * sizeof(packet));
+    a->used = 0;
+}
 
 int main(int argc, char *argv[])
 {
@@ -19,7 +86,12 @@ int main(int argc, char *argv[])
     //char *hostaddrp;
     //struct hostent *hostp;
     struct sockaddr_in servaddr, cliaddr;
-    packet *receivePacket = malloc(sizeof(packet));
+    packet *receivePacket = calloc(0, sizeof(packet));
+
+    //creates array size 10 to hold packets that are for
+    //existing players on the server
+    Array playerPacketArray;
+    initArray(&playerPacketArray, 2);
 
     //creating sample packets and packet buffer
     char packetBuffer[sizeof(short int) + sizeof(packet) * 3];
@@ -29,16 +101,27 @@ int main(int argc, char *argv[])
     //add array size to front of buffer
     memcpy(&(packetBuffer), &packetBufferSize, sizeof(packetBufferSize));
 
-    packet newPack = {1,1,5,"zachary"};
-    packet newPack2 = {1,2,10, "daniel"};
-    packet newPack3 = {1,3,4, "dave"};
+
+/*    
+    packet newPack = {1, 1, 5, "zachary"};
+    packet newPack2 = {1, 2, 10, "daniel"};
+    packet newPack3 = {1, 3, 4, "dave"};
+*/
+
+
+    //test adding to packetArray
+    /*addToArray(&playerPacketArray, newPack);
+    packet Test1 = getPacketFromArray(&playerPacketArray, "zachary");
+    printf("HERE: \n");
+    printPacket(Test1);*/
 
     int tempVal = getArraySize(packetBuffer);
     printf("SIZE: %d\n", tempVal);
 
+    /*
     addPacketToBuffer(packetBuffer, newPack, &packetBufferIndex);
     addPacketToBuffer(packetBuffer, newPack2, &packetBufferIndex);
-    addPacketToBuffer(packetBuffer, newPack3, &packetBufferIndex);
+    addPacketToBuffer(packetBuffer, newPack3, &packetBufferIndex);*/
 
     // Creating socket file descriptor
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
@@ -72,12 +155,21 @@ int main(int argc, char *argv[])
                      MSG_WAITALL, (struct sockaddr *)&cliaddr,
                      &len);
 
+        printf("%ld\n", n);
         //print string message from client
         //printf("server received %ld/%ld bytes\n", sizeof(receivePacket), n);
-        if (n > 0){
+        if (n > 0)
+        {
             printf("Received Packet!\n");
             printPacket(*receivePacket);
+            if (!checkIfPlayerPacketExists(&playerPacketArray, receivePacket->userName)){
+                addToArray(&playerPacketArray, *receivePacket);
+            }
+            else{
+                //player exists, update their information and check for no cheating
 
+            }
+            
         }
 
         //send packetBuffer Array to client
@@ -89,32 +181,3 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-
-/*
-
-    while (1)
-    {
-        n = recvfrom(sockfd, (char *)buffer, MAXLINE,
-                     MSG_WAITALL, (struct sockaddr *)&cliaddr,
-                     &len);
-
-        //printf("N is equal to: %ld\n", n);
-
-        buffer[n] = '\0';
-        //printf("Client : %s\n", buffer);
-        printf("server received %ld/%ld bytes: %s\n", strlen(buffer), n, buffer);
-
-        struct sockaddr_in *pv4Addr = (struct sockaddr_in *)&cliaddr;
-        struct in_addr ipAddr = pv4Addr->sin_addr;
-
-        char ip[16];
-        inet_ntop(AF_INET, &ipAddr, ip, sizeof(ip));
-        printf("%s\n", ip);
-
-        sendto(sockfd, (const packet*)&newPack, sizeof(newPack), MSG_CONFIRM, (const struct sockaddr *)&cliaddr, len);
-        printf("Hello message sent.\n");
-
-        memset(buffer, 0, sizeof(buffer));
-        //memset(ip, 0, sizeof(ip));
-    }
-*/
