@@ -11,16 +11,16 @@ textClient: clientTest.c
 	$(CC) $(CFLAGS) -o $@ -c $^ $(LDFLAGS)
 
 textServer: serverTest.c
-	$(CC) $(CFLAGS) -o $@ -c $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 bufferManagement: bufferManagement.c
 	$(CC) $(CFLAGS) -o $@ -c $^ $(LDFLAGS)
 
 packetServer: bufferManagement.c packetServer.c
-	$(CC) $(CFLAGS) -o $@ -c $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 packetClient: bufferManagement.c packetClient.c
-	$(CC) $(CFLAGS) -o $@ -c $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 clean:
 	$(RM) *.o
