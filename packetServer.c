@@ -131,6 +131,7 @@ int main(int argc, char *argv[])
             //if they do exist then we assume the game is running and this player
             //wants the information for all the other clients back
             else{
+                updateClientInfo(&playerPacketArray, *receivePacket);
 
                 //player exists, update their information and check for no cheating
 

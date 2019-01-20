@@ -11,6 +11,7 @@ typedef struct
 
 } Array;
 
+void updateClientInfo(Array *a, packet packVal);
 
 bool checkIfPlayerPacketExists(Array *a, char *userName);
 

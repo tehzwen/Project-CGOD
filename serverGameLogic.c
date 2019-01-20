@@ -21,7 +21,6 @@ bool checkIfPlayerPacketExists(Array *a, char *userName)
     return false;
 }
 
-
 void initArray(Array *a, size_t initialSize)
 {
     a->size = initialSize;
@@ -38,7 +37,6 @@ void addToArray(Array *a, packet packVal)
     }
     a->array[a->used++] = packVal;
 }
-
 
 //need to null out the packet before returning if not found
 packet getPacketFromArray(Array *a, char *userName)
@@ -60,6 +58,19 @@ packet getPacketFromArray(Array *a, char *userName)
         }
     }
     return temp;
+}
 
-    
+void updateClientInfo(Array *a, packet packVal)
+{
+
+    for (int x = 0; x < a->used; x++)
+    {
+        if (strcmp(a->array[x].userName, packVal.userName) == 0)
+        {
+            a->array[x].x = packVal.x;
+            a->array[x].y = packVal.y;
+            a->array[x].active = packVal.active;
+            printf("Updated here\n");
+        }
+    }
 }

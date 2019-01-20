@@ -167,8 +167,9 @@ int main()
 
         printw("%c", gun);
         refresh();
-
+        
         char c = getch();
+
 
         clear();
 

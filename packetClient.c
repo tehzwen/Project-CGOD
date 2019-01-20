@@ -57,21 +57,18 @@ int main()
     strcpy(sendPack.userName, hello);
     sendPack.active = 1;
 
-    for (;;)
-    {
-        sendto(sockfd, (const packet *)&sendPack, sizeof(sendPack),
-               MSG_CONFIRM, (const struct sockaddr *)&servaddr,
-               sizeof(servaddr));
-        printf("Hello message sent.\n");
+    sendto(sockfd, (const packet *)&sendPack, sizeof(sendPack),
+           MSG_CONFIRM, (const struct sockaddr *)&servaddr,
+           sizeof(servaddr));
+    printf("Hello message sent.\n");
 
-        n = recvfrom(sockfd, (char *)receiveBuffer, sizeof(receiveBuffer),
-                     MSG_WAITALL, (struct sockaddr *)&servaddr,
-                     &len);
+    n = recvfrom(sockfd, (char *)receiveBuffer, sizeof(receiveBuffer),
+                 MSG_WAITALL, (struct sockaddr *)&servaddr,
+                 &len);
 
-        printf("%ld\n", n);
+    printf("%ld\n", n);
 
-        printf("%d\n", receiveBuffer[0]);
-    }
+    printf("%d\n", receiveBuffer[0]);
 
     int arraySize = getArraySize(receiveBuffer);
     printf("SIZE: %d\n", arraySize);
@@ -89,38 +86,3 @@ int main()
     close(sockfd);
     return 0;
 }
-
-
-/*
-
-        if (n > 0)
-        {
-            printf("Received Packet!\n");
-            printPacket(*receivePacket);
-
-            //if the player doesn't exist then we append to the playerPacketArray
-            if (!checkIfPlayerPacketExists(&playerPacketArray, receivePacket->userName)){
-                addToArray(&playerPacketArray, *receivePacket);
-                //packet replyLoginPacket = {3,0,0,"server"};
-                //sendto(sockfd, (const char *)test, sizeof(test), MSG_CONFIRM, (const struct sockaddr *)&cliaddr, len);
-
-            }
-            //if they do exist then we assume the game is running and this player
-            //wants the information for all the other clients back
-            else{
-
-                //player exists, update their information and check for no cheating
-
-            }
-            
-        }
-
-        //print the playerarray if it is not empty
-
-        if (playerPacketArray.used > 0){
-            printf("%s\n", playerPacketArray.array[0].userName);
-        }
-
-
-
-*/
