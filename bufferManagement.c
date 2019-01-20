@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <time.h>
 #include "packet.h"
 
 int getArraySize(char * buffer){
@@ -26,7 +27,7 @@ void incrementBufferPacketArraySize(char * buffer){
 packet getPacketFromBuffer(char *buffer, int desiredIndex){
     packet temp;
 
-    //desiredIndex * sizeof(packet) essentially indexes through the buffer for each 
+    //desiredIndex * sizeof(packet) essentially indexes through the buffer for each
     //packet inside the buffer
     memcpy(&temp, &(buffer[2 + (desiredIndex * sizeof(packet))]), sizeof(packet));
 
@@ -41,7 +42,11 @@ void addPacketToBuffer(char *buffer, packet packVal, int * currentIndex){
 }
 
 void printPacket(packet packVal){
-    printf("UserName: %s\nActive: %d\nXCoord: %d\nYCoord: %d\n", packVal.userName, packVal.active, packVal.x, packVal.y);
+    time_t now;
+    time(&now);
+    printf("\n%sUserName: %s\tActive: %d\tXCoord: %d\tYCoord: %d\n",
+	   ctime(&now),
+	   packVal.userName, packVal.active, packVal.x, packVal.y);
 }
 
 
