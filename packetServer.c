@@ -34,6 +34,16 @@ int init_server(struct sockaddr_in *saddr)
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = htons(PORT);
 
+
+    int val = 1;
+    int sockopt_ret = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val));
+
+    if (sockopt_ret < 0) {
+	    perror("Sock opt failed");
+	    close(sockfd);
+	    exit(EXIT_FAILURE);
+    }
+
     int bind_ret = bind(sockfd, (const struct sockaddr *)&servaddr,
                         sizeof(servaddr));
 
