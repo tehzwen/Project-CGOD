@@ -10,6 +10,7 @@
 #include <ncurses.h>
 #include <netinet/in.h>
 #include "bufferManagement.h"
+#include "serverGameLogic.h"
 
 #include "game.h"
 
@@ -94,7 +95,7 @@ int checkChar(char ch)
     return -1;
 }
 
-int runClient(void)
+int runClient(char *userName)
 {
 
     //NETWORK CLIENT STUFF
@@ -103,6 +104,9 @@ int runClient(void)
     char receiveBuffer[sizeof(short int) + sizeof(packet) * 10];
     char hello[10];
     struct sockaddr_in servaddr;
+
+    Array playerArray;
+    initArray(&playerArray, 2);
 
     // Creating socket file descriptor
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
@@ -121,12 +125,6 @@ int runClient(void)
 
     socklen_t len;
     ssize_t n;
-
-    packet sendPack;
-    sendPack.x = 0;
-    sendPack.y = 0;
-    strcpy(sendPack.userName, "boo");
-    sendPack.active = 1;
 
     //END NETWORK CLIENT SETUP
 
@@ -154,6 +152,12 @@ int runClient(void)
     while (1)
     {
 
+        packet sendPack;
+        sendPack.x = x;
+        sendPack.y = y;
+        strcpy(sendPack.userName, userName);
+        sendPack.active = 1;
+
         refreshScreen();
         move(startY, startX);
         printw("*");
@@ -174,7 +178,7 @@ int runClient(void)
         printw("%c", gun);
         refresh();
 
-        halfdelay(1);
+        halfdelay(0.5);
         ch = getch();
 
         if (ch != ERR)
@@ -233,9 +237,32 @@ int runClient(void)
 
                 int arraySize = getArraySize(receiveBuffer);
 
-                packet temp = getPacketFromBuffer(receiveBuffer, 0);
+                for (int i = 0; i < arraySize; i++)
+                {
+                    packet temp = getPacketFromBuffer(receiveBuffer, i);
+                    if (!checkIfPlayerPacketExists(&playerArray, temp.userName)) 
+                    {
+                        /*move(temp.y + y, temp.x + x);
+                        printw(temp.userName);
+                            printf("%s vs %s\n", a->array[x].userName, userName);    refresh();*/
+                        addToArray(&playerArray, temp);
+                    }
+                    else{
+                        updateClientInfo(&playerArray, temp);
+                    }
+                }
 
+                for (int j = 0; j < playerArray.used; j++)
+                {
+                    move(playerArray.array[j].y, playerArray.array[j].x);
+                    printw(playerArray.array[j].userName);
+                }
+
+                /*
+                move(temp.y + y, temp.x + x);
                 printw(temp.userName);
+                refresh();*/
+                refresh();
             }
 
             refresh();
@@ -254,14 +281,14 @@ int runClient(void)
     return 0;
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     initscr();
 
     mainwin = newwin(0, 0, 0, 0);
     oldcur = curs_set(0);
 
-    runClient();
+    runClient(argv[argc - 1]);
 
     return EXIT_SUCCESS;
 }

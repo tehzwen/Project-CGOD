@@ -11,7 +11,7 @@ bool checkIfPlayerPacketExists(Array *a, char *userName)
 {
     for (int x = 0; x < a->used; x++)
     {
-        printf("%s vs %s\n", a->array[x].userName, userName);
+
 
         if (strcmp(a->array[x].userName, userName) == 0)
         {
@@ -47,7 +47,6 @@ packet getPacketFromArray(Array *a, char *userName)
     {
         for (int x = 0; x < a->used; x++)
         {
-            printf("%s vs %s\n", a->array[x].userName, userName);
 
             if (strcmp(a->array[x].userName, userName) == 0)
             {
@@ -67,10 +66,12 @@ void updateClientInfo(Array *a, packet packVal)
     {
         if (strcmp(a->array[x].userName, packVal.userName) == 0)
         {
+            /*
             a->array[x].x = packVal.x;
             a->array[x].y = packVal.y;
             a->array[x].active = packVal.active;
-            printf("Updated here\n");
+            printf("Updated here\n");*/
+            memcpy(&(a->array[x]), &packVal, sizeof(packVal));
         }
     }
 }

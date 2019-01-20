@@ -96,9 +96,10 @@ int main(int argc, char *argv[])
 
         printf("%ld\n", n);
 
-	if (n == -1) {
-		printf("Error receiving from client: %s", strerror(errno));
-	}
+        if (n == -1)
+        {
+            printf("Error receiving from client: %s", strerror(errno));
+        }
 
         //print string message from client
         //printf("server received %ld/%ld bytes\n", sizeof(receivePacket), n);
@@ -112,13 +113,13 @@ int main(int argc, char *argv[])
             {
                 addToArray(&playerPacketArray, *receivePacket);
 
-                packet confirmPack;
+                /*packet confirmPack;
                 confirmPack.active = 1;
                 strcpy(confirmPack.userName, receivePacket->userName);
                 confirmPack.x = 0;
                 confirmPack.y = 0;
 
-                addPacketToBuffer(packetBuffer, confirmPack, &packetBufferIndex);
+                addPacketToBuffer(packetBuffer, confirmPack, &packetBufferIndex);*/
 
                 n = sendto(sockfd, (const char *)packetBuffer, sizeof(packetBuffer), MSG_CONFIRM, (const struct sockaddr *)&cliaddr, sizeof(cliaddr));
 
@@ -164,6 +165,8 @@ int main(int argc, char *argv[])
 
                 //player exists, update their information and check for no cheating
             }
+
+
         }
 
         //print the playerarray if it is not empty

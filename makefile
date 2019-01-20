@@ -4,7 +4,7 @@ LDFLAGS=-lncurses -lvlc
 
 all: game
 
-game: bufferManagement.c game.c game.h
+game: bufferManagement.c serverGameLogic.c game.c game.h
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 textClient: clientTest.c

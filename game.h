@@ -16,7 +16,7 @@ typedef struct
 #define RIGHT 4
 #define QUIT 5
 
-int runClient(void);
+int runClient(char *userName);
 void refreshScreen(void);
 int checkChar(char ch);
 void movePlayer(int y, int x, char *val);
