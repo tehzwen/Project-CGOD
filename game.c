@@ -1,260 +1,360 @@
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <ncurses.h>
-#include <vlc/vlc.h>
+#include <netinet/in.h>
+#include "bufferManagement.h"
+#include "serverGameLogic.h"
+#include "game.h"
+#include "gameObjectArray.h"
+#include "mapBuffer.h"
 
-typedef struct
+#define PORT 3000
+
+WINDOW *mainwin;
+int oldcur;
+
+/*
+void initObjectArray(gameObjectArray *a, size_t initialSize)
 {
-    int yCoord;
-    int xCoord;
-    char *objectString;
-} gameObject;
-
-//takes boolean pointers and changes values depending on surroundings
-void checkForObstacles(bool *up, bool *down, bool *left, bool *right, int y, int x)
-{
-
-    char upChar = mvinch(y - 2, x);
-    char downChar = mvinch(y + 2, x);
-    char leftChar = mvinch(y, x - 2);
-    char rightChar = mvinch(y, x + 2);
-
-    if (upChar == ' ')
-    {
-        *up = true;
-    }
-    else
-    {
-        *up = false;
-    }
-    if (downChar == ' ')
-    {
-        *down = true;
-    }
-    else
-    {
-        *down = false;
-    }
-    if (leftChar == ' ')
-    {
-        *left = true;
-    }
-    else
-    {
-        *left = false;
-    }
-    if (rightChar == ' ')
-    {
-        *right = true;
-    }
-    else
-    {
-        *right = false;
-    }
+    a->size = initialSize;
+    a->array = (gameObject *)malloc(initialSize * sizeof(gameObject));
+    a->used = 0;
+    a->currID = 0;
 }
 
-void refreshScreen(WINDOW *win)
+void addToObjArray(gameObjectArray *a, gameObject objVal)
 {
-    box(win, 0, 0);
-    wrefresh(win);
+    if (a->used == a->size)
+    {
+        a->size *= 2;
+        a->array = (gameObject *)realloc(a->array, a->size * sizeof(gameObject));
+    }
+    a->array[a->used++] = objVal;
+    a->currID++;
+}
+
+gameObject getGameObjectFromArray(gameObjectArray *a, int id)
+{
+    gameObject temp;
+
+    for (int x = 0; x < a->used; x++)
+    {
+
+        if (a->array[x].id == id)
+        {
+            temp = a->array[x];
+            return temp;
+        }
+    }
+
+    return temp;
+} */
+
+void refreshScreen(void)
+{
+    box(mainwin, 0, 0);
+    wrefresh(mainwin);
     refresh();
 }
 
-bool checkIfGameObjectIsInBounds(gameObject object, int y, int x, int yMax, int xMax)
+void movePlayer(int y, int x, char *val)
 {
+    move(y, x);
+    printw("%s", val);
+    refresh();
+}
 
-    if (object.yCoord + y < yMax && object.xCoord + x < xMax && object.yCoord + y > 0 && object.xCoord + x > 0)
-    {
+void checkObstacle(bool *up, bool *down, bool *left, bool *right, int y, int x)
+{
+    chtype upChar = mvinch(y - 2, x);
+    chtype downChar = mvinch(y + 2, x);
+    chtype leftChar = mvinch(y, x - 2);
+    chtype rightChar = mvinch(y, x + 2);
+
+    if (upChar == ' ')
+        *up = true;
+    else
+        *up = false;
+    if (downChar == ' ')
+        *down = true;
+    else
+        *down = false;
+    if (leftChar == ' ')
+        *left = true;
+    else
+        *left = false;
+    if (rightChar == ' ')
+        *right = true;
+    else
+        *right = false;
+}
+
+bool checkObjInbounds(gameObject obj, int y, int x, int yMax, int xMax)
+{
+    if (obj.yCoord + y < yMax && obj.xCoord + x < xMax && obj.yCoord + y > 0 && obj.xCoord + x > 0)
         return true;
-    }
 
     return false;
 }
 
-void moveToCoordAndPrintString(int y, int x, char *value)
+bool checkPlayerInBounds(packet playerPack, int y, int x, int yMax, int xMax)
 {
-    move(y, x);
-    printw("%s", value);
-    refresh();
+    if (playerPack.y + y < yMax && playerPack.x + x < xMax && playerPack.y + y > 0 && playerPack.x + x > 0)
+        return true;
+
+    return false;
 }
 
-//y and x are added to the gameObjects original location in the game
-void printGameObjectToScreen(gameObject object, int y, int x)
+void printObj(gameObject obj, int y, int x)
 {
-    moveToCoordAndPrintString(object.yCoord + y, object.xCoord + x, object.objectString);
+    movePlayer(obj.yCoord + y, obj.xCoord + x, obj.objectString);
 }
 
-int main()
+int checkChar(char ch)
+{
+    if (ch == 'q')
+        return QUIT;
+    else if (ch == 'w' || ch == 65)
+        return UP;
+    else if (ch == 's' || ch == 66)
+        return DOWN;
+    else if (ch == 'a' || ch == 68)
+        return LEFT;
+    else if (ch == 'd' || ch == 67)
+        return RIGHT;
+    return -1;
+}
+
+int runClient(char *userName)
 {
 
-    libvlc_instance_t *inst;
-    libvlc_media_player_t *mp;
-    libvlc_media_t *m;
+    //NETWORK CLIENT STUFF
 
-    inst = libvlc_new(0, NULL);
-    m = libvlc_media_new_path(inst, "detective.wav");
+    int sockfd;
+    char receiveBuffer[sizeof(short int) + sizeof(packet) * 10];
+    char hello[10];
+    struct sockaddr_in servaddr;
 
-    mp = libvlc_media_player_new_from_media(m);
+    Array playerArray;
+    initArray(&playerArray, 2);
 
-    libvlc_media_release(m);
+    gameObjectArray objectArray;
+    initObjectArray(&objectArray, 2);
 
-    libvlc_media_player_play(mp);
+    //creating border
+    int testY = 0;
+    int testX = 1;
 
-    WINDOW *mainwin;
+    for (int x = 0; x < 150; x++)
+    {
+        gameObject tempLeft = {testY, 0, objectArray.currID, "<"};
+        addToObjArray(&objectArray, tempLeft);
+        gameObject tempRight = {testY, 300, objectArray.currID, ">"};
+        addToObjArray(&objectArray, tempRight);
 
-    int width, height;
+        testY++;
+    }
+
+    for (int x = 0; x < 300; x++)
+    {
+
+        gameObject tempTop = {150, testX, objectArray.currID, "_"};
+        addToObjArray(&objectArray, tempTop);
+        gameObject tempBottom = {0, testX, objectArray.currID, "^"};
+        addToObjArray(&objectArray, tempBottom);
+
+        testX++;
+    }
+
+    // Creating socket file descriptor
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+    {
+        perror("socket creation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    memset(&servaddr, 0, sizeof(servaddr));
+
+    // Filling server information
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons(PORT);
+    //servaddr.sin_addr.s_addr = INADDR_ANY;
+    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+    socklen_t len;
+    ssize_t n;
+
+    //END NETWORK CLIENT SETUP
+    int trueX, trueY;
+    char someVal[10];
+    char ch;
+    char gun = '-';
+    int x = 0, y = 0;
+    int yMax, xMax, startY, startX, gy, gx, direction;
     bool canMoveUp, canMoveDown, canMoveLeft, canMoveRight;
-
-    height = 50;
-    width = 200;
-
-    initscr();
-
-    mainwin = newwin(height, width, 0, 0);
-
-    int yMax, xMax;
 
     getmaxyx(mainwin, yMax, xMax);
 
-    int startX = xMax / 2;
-    int startY = yMax / 2;
+    startX = xMax / 2;
+    startY = yMax / 2;
+    gx = startX - 1;
+    gy = startY;
 
-    refreshScreen(mainwin);
+    //initObjArray(objArray, yMax, xMax);
 
-    int x = 0;
-    int y = 0;
-    char gun = '-';
-    int gx = startX - 1;
-    int gy = startY;
-
-    gameObject rock = {10, 20, "(_)"};
-    gameObject *objectArray;
-
-    objectArray = calloc(10, sizeof(gameObject));
-
-    for (int i = 0; i < 10; i++)
-    {
-        gameObject temp = {5 + i, 4 + i, "(&)"};
-        objectArray[i] = temp;
-    }
+    refreshScreen();
 
     while (1)
     {
-        refreshScreen(mainwin);
-        curs_set(0);
 
+        packet sendPack;
+        sendPack.x = startX - x;
+        sendPack.y = startY - y;
+        strcpy(sendPack.userName, userName);
+        sendPack.active = 1;
+
+        refreshScreen();
         move(startY, startX);
         printw("*");
 
-        if (checkIfGameObjectIsInBounds(rock, y, x, yMax, xMax))
+        for (int j = 0; j < objectArray.used; j++)
         {
-            printGameObjectToScreen(rock, y, x);
-        }
-
-        for (int j = 0; j < 10; j++)
-        {
-            if (checkIfGameObjectIsInBounds(objectArray[j], y, x, yMax, xMax))
+            if (checkObjInbounds(objectArray.array[j], y, x, yMax, xMax))
             {
-                printGameObjectToScreen(objectArray[j], y, x);
+                printObj(objectArray.array[j], y, x);
+                refresh();
             }
         }
-        refresh();
-
-        checkForObstacles(&canMoveUp, &canMoveDown, &canMoveLeft, &canMoveRight, startY, startX);
-
+        checkObstacle(&canMoveUp, &canMoveDown, &canMoveLeft, &canMoveRight, startY, startX);
         move(gy, gx);
-
         printw("%c", gun);
         refresh();
 
-        char c = getch();
+        halfdelay(1);
+        ch = getch();
 
-        clear();
-
-        if (c == 'q')
+        if (ch != ERR)
         {
-            break;
-        }
-        //move up
-        else if (c == 'w' || c == 65)
-        {
+            direction = checkChar(ch);
 
-            if (canMoveUp)
+            if (direction == QUIT)
+            {
+                break;
+            }
+            else if (direction == UP && canMoveUp)
             {
                 y++;
                 gx = startX;
                 gy = startY - 1;
                 gun = '|';
             }
-            else
-            {
-                beep();
-            }
-        }
-        //move down
-        else if (c == 's' || c == 66)
-        {
-
-            if (canMoveDown)
+            else if (direction == DOWN && canMoveDown)
             {
                 y--;
                 gx = startX;
                 gy = startY + 1;
                 gun = '|';
             }
-            else
-            {
-                beep();
-            }
-        }
-
-        //move left
-        else if (c == 'a' || c == 68)
-        {
-
-            if (canMoveLeft)
+            else if (direction == LEFT && canMoveLeft)
             {
                 x++;
                 gx = startX - 1;
                 gy = startY;
                 gun = '-';
             }
-            else
-            {
-                beep();
-            }
-        }
-
-        //move right
-        else if (c == 'd' || c == 67)
-        {
-
-            if (canMoveRight)
+            else if (direction == RIGHT && canMoveRight)
             {
                 x--;
                 gx = startX + 1;
                 gy = startY;
                 gun = '-';
             }
-            else
+        }
+        else
+        {
+
+            n = sendto(sockfd, (const packet *)&sendPack, sizeof(sendPack),
+                       MSG_CONFIRM, (const struct sockaddr *)&servaddr,
+                       sizeof(servaddr));
+
+            if (n > 0)
             {
-                beep();
+                n = recvfrom(sockfd, (char *)receiveBuffer, sizeof(receiveBuffer),
+                             MSG_WAITALL, (struct sockaddr *)&servaddr,
+                             &len);
+
+                if (checkIfMapData(receiveBuffer) == 66)
+                {
+                    gameObject startPos = getObjectFromBuffer(receiveBuffer, 0);
+                    y = startPos.xCoord;
+                    x = startPos.yCoord;
+                    //someVal = startPos.objectString;
+                    //strcpy(someVal, startPos.objectString);
+                }
+
+                int arraySize = getArraySize(receiveBuffer);
+
+                for (int i = 0; i < arraySize; i++)
+                {
+                    packet temp = getPacketFromBuffer(receiveBuffer, i);
+                    if (!checkIfPlayerPacketExists(&playerArray, temp.userName))
+                    {
+                        /*move(temp.y + y, temp.x + x);
+                        printw(temp.userName);
+                            printf("%s vs %s\n", a->array[x].userName, userName);    refresh();*/
+                        addToArray(&playerArray, temp);
+                    }
+                    else
+                    {
+                        updateClientInfo(&playerArray, temp);
+                    }
+                }
+
+                for (int j = 0; j < playerArray.used; j++)
+                {
+                    if (checkPlayerInBounds(playerArray.array[j], playerArray.array[j].y, playerArray.array[j].x, yMax, xMax))
+                    {
+                        move(playerArray.array[j].y + y, playerArray.array[j].x + x);
+                        printw(playerArray.array[j].userName);
+                    }
+                }
+
+                /*
+                move(trueX, trueY);
+                printw(someVal);
+                refresh();
+                refresh();*/
             }
+
+            refresh();
+            getch();
         }
 
-        refreshScreen(mainwin);
+        refreshScreen();
+        clear();
+        doupdate();
     }
-
-    libvlc_media_player_stop(mp);
-    libvlc_media_player_release(mp);
-
-    libvlc_release(inst);
-
-    free(objectArray);
     delwin(mainwin);
     endwin();
-    refresh();
+
+    return 0;
+}
+
+int main(int argc, char **argv)
+{
+    initscr();
+
+    mainwin = newwin(0, 0, 0, 0);
+    oldcur = curs_set(0);
+
+    runClient(argv[argc - 1]);
 
     return EXIT_SUCCESS;
 }

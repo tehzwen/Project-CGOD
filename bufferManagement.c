@@ -44,6 +44,8 @@ void printPacket(packet packVal){
     printf("UserName: %s\nActive: %d\nXCoord: %d\nYCoord: %d\n", packVal.userName, packVal.active, packVal.x, packVal.y);
 }
 
+
+
 /*
 int main(){
     packet temp = {1, 8, 3, "Zach"};
