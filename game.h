@@ -8,6 +8,11 @@ typedef struct
     char *objectString;
 } gameObject;
 
+//map struct
+typedef struct {
+    gameObject object[81000];
+} map;
+
 // Macros for moves
 #define DOWN 1
 #define UP 2
