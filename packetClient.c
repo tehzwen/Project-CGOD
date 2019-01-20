@@ -22,6 +22,7 @@ void printArray(char *receiveBuffer, int arrSize)
     }
 }
 
+
 // Driver code
 int main()
 {
