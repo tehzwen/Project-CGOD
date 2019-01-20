@@ -18,7 +18,7 @@ typedef struct
     int yCoord;
     int xCoord;
     int id;
-    char *objectString;
+    char objectString[10];
 
 
 } gameObject;

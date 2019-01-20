@@ -2,12 +2,14 @@
 #define MAPBUFFER_H
 #include "gameObjectArray.h"
 
-int getArraySize(char *buffer);
+gameObject getObjectFromBuffer(char *buffer, int desiredIndex);
 
-void incrementBufferPacketArraySize(char *buffer);
+int getObjectArraySize(char * buffer);
 
-gameObjectArray getArrayFromBuffer(char *buffer, int desiredIndex);
+void addObjectToBuffer(char *buffer, gameObject gameObjVal, int * currentIndex);
 
-void addArrayToBuffer(char *buffer, gameObjectArray packVal, int *currentIndex);
+void incrementMapBufferArraySize(char * buffer);
+
+int checkIfMapData(char * buffer);
 
 #endif

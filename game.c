@@ -13,9 +13,9 @@
 #include "serverGameLogic.h"
 #include "game.h"
 #include "gameObjectArray.h"
+#include "mapBuffer.h"
 
 #define PORT 3000
-
 
 WINDOW *mainwin;
 int oldcur;
@@ -104,6 +104,14 @@ bool checkObjInbounds(gameObject obj, int y, int x, int yMax, int xMax)
     return false;
 }
 
+bool checkPlayerInBounds(packet playerPack, int y, int x, int yMax, int xMax)
+{
+    if (playerPack.y + y < yMax && playerPack.x + x < xMax && playerPack.y + y > 0 && playerPack.x + x > 0)
+        return true;
+
+    return false;
+}
+
 void printObj(gameObject obj, int y, int x)
 {
     movePlayer(obj.yCoord + y, obj.xCoord + x, obj.objectString);
@@ -144,7 +152,6 @@ int runClient(char *userName)
     int testY = 0;
     int testX = 1;
 
-    /*
     for (int x = 0; x < 150; x++)
     {
         gameObject tempLeft = {testY, 0, objectArray.currID, "<"};
@@ -157,14 +164,14 @@ int runClient(char *userName)
 
     for (int x = 0; x < 300; x++)
     {
-        
+
         gameObject tempTop = {150, testX, objectArray.currID, "_"};
         addToObjArray(&objectArray, tempTop);
         gameObject tempBottom = {0, testX, objectArray.currID, "^"};
         addToObjArray(&objectArray, tempBottom);
 
         testX++;
-    }*/
+    }
 
     // Creating socket file descriptor
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
@@ -185,7 +192,8 @@ int runClient(char *userName)
     ssize_t n;
 
     //END NETWORK CLIENT SETUP
-
+    int trueX, trueY;
+    char someVal[10];
     char ch;
     char gun = '-';
     int x = 0, y = 0;
@@ -207,8 +215,8 @@ int runClient(char *userName)
     {
 
         packet sendPack;
-        sendPack.x = x;
-        sendPack.y = y;
+        sendPack.x = startX - x;
+        sendPack.y = startY - y;
         strcpy(sendPack.userName, userName);
         sendPack.active = 1;
 
@@ -282,6 +290,15 @@ int runClient(char *userName)
                              MSG_WAITALL, (struct sockaddr *)&servaddr,
                              &len);
 
+                if (checkIfMapData(receiveBuffer) == 66)
+                {
+                    gameObject startPos = getObjectFromBuffer(receiveBuffer, 0);
+                    y = startPos.xCoord;
+                    x = startPos.yCoord;
+                    //someVal = startPos.objectString;
+                    //strcpy(someVal, startPos.objectString);
+                }
+
                 int arraySize = getArraySize(receiveBuffer);
 
                 for (int i = 0; i < arraySize; i++)
@@ -302,15 +319,18 @@ int runClient(char *userName)
 
                 for (int j = 0; j < playerArray.used; j++)
                 {
-                    move(playerArray.array[j].y, playerArray.array[j].x);
-                    printw(playerArray.array[j].userName);
+                    if (checkPlayerInBounds(playerArray.array[j], playerArray.array[j].y, playerArray.array[j].x, yMax, xMax))
+                    {
+                        move(playerArray.array[j].y + y, playerArray.array[j].x + x);
+                        printw(playerArray.array[j].userName);
+                    }
                 }
 
                 /*
-                move(temp.y + y, temp.x + x);
-                printw(temp.userName);
-                refresh();*/
+                move(trueX, trueY);
+                printw(someVal);
                 refresh();
+                refresh();*/
             }
 
             refresh();

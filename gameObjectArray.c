@@ -36,6 +36,7 @@ gameObject getGameObjectFromArray(gameObjectArray *a, int id)
 
     for (int x = 0; x < a->used; x++)
     {
+        printf("here %d\n", a->array[x].id);
 
         if (a->array[x].id == id)
         {

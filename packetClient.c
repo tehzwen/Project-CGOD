@@ -7,6 +7,8 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include "bufferManagement.h"
+#include "gameObjectArray.h"
+#include "mapBuffer.h"
 
 #define PORT 3000
 #define MAXLINE 1024
@@ -27,7 +29,7 @@ void printArray(char *receiveBuffer, int arrSize)
 int main()
 {
     int sockfd;
-    char receiveBuffer[sizeof(short int) + sizeof(packet) * 10];
+    char receiveBuffer[50000];
     char hello[10];
     struct sockaddr_in servaddr;
 
@@ -69,7 +71,15 @@ int main()
 
     printf("%ld\n", n);
 
-    printf("%d\n", receiveBuffer[0]);
+    printf("first index: %d\n", receiveBuffer[0]);
+
+    if (checkIfMapData(receiveBuffer) == 66){
+        printf("RECEIVED MAP DATA!\n");
+        
+        //printf("%s\n", tempObj.objectString);
+    }
+
+
 
     int arraySize = getArraySize(receiveBuffer);
     printf("SIZE: %d\n", arraySize);

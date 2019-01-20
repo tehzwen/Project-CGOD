@@ -101,7 +101,7 @@ gameObjectArray createMap2()
         else
         {
 
-            int rando = rand() % 100;
+            int rando = rand() % 200;
 
             switch (rando)
             {

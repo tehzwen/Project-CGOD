@@ -11,12 +11,6 @@ typedef struct
 
 } Array;
 
-typedef struct{
-    int y;
-    int x;
-
-} tuple;
-
 void updateClientInfo(Array *a, packet packVal);
 
 bool checkIfPlayerPacketExists(Array *a, char *userName);

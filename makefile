@@ -4,7 +4,7 @@ LDFLAGS=-lncurses -lvlc
 
 all: game
 
-game: serverGameLogic.c gameObjectArray.c bufferManagement.c game.c game.h
+game: mapBuffer.c serverGameLogic.c gameObjectArray.c bufferManagement.c game.c game.h
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 textClient: clientTest.c
@@ -19,10 +19,10 @@ bufferManagement: bufferManagement.c
 mapBuffer: mapBuffer.c gameObjectArray.c mapBuffer.h gameObjectArray.h
 	$(CC) $(CFLAGS) -o mapBuffer mapBuffer.c gameObjectArray.c mapBuffer.h gameObjectArray.h
 
-packetServer: bufferManagement.c gameObjectArray.c serverGameLogic.c packetServer.c
+packetServer: mapBuffer.c bufferManagement.c gameObjectArray.c serverGameLogic.c packetServer.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-packetClient: bufferManagement.c packetClient.c
+packetClient: mapBuffer.c gameObjectArray.c bufferManagement.c packetClient.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 clean:

@@ -10,6 +10,7 @@
 #include "bufferManagement.h"
 #include "gameObjectArray.h"
 #include "serverGameLogic.h"
+#include "mapBuffer.h"
 #include <stdbool.h>
 
 #define PORT 3000
@@ -56,40 +57,6 @@ int init_server()
 
 int main(int argc, char *argv[])
 {
-
-    //MAP STUFF
-    gameObjectArray mapArray;
-    initObjectArray(&mapArray, 2);
-
-    int testY = 0;
-    int testX = 1;
-
-    for (int x = 0; x < 150; x++)
-    {
-        gameObject tempLeft = {testY, 0, mapArray.currID, "<"};
-        addToObjArray(&mapArray, tempLeft);
-        gameObject tempRight = {testY, 300, mapArray.currID, ">"};
-        addToObjArray(&mapArray, tempRight);
-
-        testY++;
-    }
-
-    for (int x = 0; x < 300; x++)
-    {
-
-        gameObject tempTop = {150, testX, mapArray.currID, "_"};
-        addToObjArray(&mapArray, tempTop);
-        gameObject tempBottom = {0, testX, mapArray.currID, "^"};
-        addToObjArray(&mapArray, tempBottom);
-
-        testX++;
-    }
-
-    //creating map buffer
-    char mapBuffer[sizeof(mapArray)];
-    memcpy(&(mapBuffer), &mapArray, sizeof(mapArray));
-
-    //END MAP STUFF
 
     int sockfd;
     char test[20] = "zach";
@@ -175,16 +142,55 @@ int main(int argc, char *argv[])
             {
 
                 addToArray(&playerPacketArray, *receivePacket);
-                /*
-                packet confirmPack;
-                confirmPack.active = 1;
-                strcpy(confirmPack.userName, receivePacket->userName);
-                confirmPack.x = 0;
-                confirmPack.y = 0;
 
-                addPacketToBuffer(packetBuffer, confirmPack, &packetBufferIndex); */
+                //create map buffer here
 
-                n = sendto(sockfd, (const char *)packetBuffer, sizeof(packetBuffer), MSG_CONFIRM, (const struct sockaddr *)&cliaddr, sizeof(cliaddr));
+                //MAP STUFF
+                gameObjectArray mapArray;
+                initObjectArray(&mapArray, 2);
+
+                int testY = 0;
+                int testX = 1;
+
+                gameObject topLeftStartPos = {10, 10, mapArray.currID, "&"};
+                gameObject middleStartPos = {-50, -50, mapArray.currID, "&"};
+
+                int randInt = rand() % (2 + 1 - 0) + 0;
+
+                printf("RAND: %d\n", randInt);
+
+                if (randInt == 0){
+                    addToObjArray(&mapArray, middleStartPos);
+                }
+
+                else{
+                    addToObjArray(&mapArray, topLeftStartPos);
+                }
+                
+
+                
+
+                //creating map buffer
+                char mapBuffer[4 + (sizeof(gameObject) * mapArray.used)];
+
+                short int objBufferSize = 0;
+                short int mapStatus = 66;
+                int objBufferIndex = 0;
+                memcpy(&(mapBuffer[0]), &objBufferSize, sizeof(objBufferSize));
+                memcpy(&(mapBuffer[2]), &mapStatus, sizeof(mapStatus));
+
+                for (int x = 0; x < mapArray.used; x++)
+                {
+                    addObjectToBuffer(mapBuffer, mapArray.array[x], &objBufferIndex);
+                }
+
+                printf("size of the buffer%d\n", sizeof(mapBuffer));
+
+                //END MAP STUFF
+
+                //n = sendto(sockfd, (const char *)packetBuffer, sizeof(packetBuffer), MSG_CONFIRM, (const struct sockaddr *)&cliaddr, sizeof(cliaddr));
+
+                n = sendto(sockfd, (const char *)mapBuffer, sizeof(mapBuffer), MSG_CONFIRM, (const struct sockaddr *)&cliaddr, sizeof(cliaddr));
 
                 if (n > 0)
                 {
