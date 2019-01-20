@@ -8,15 +8,20 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include "bufferManagement.h"
+#include "gameObjectArray.h"
 #include "serverGameLogic.h"
 #include <stdbool.h>
 
 #define PORT 3000
 #define MAXLINE 1024
 
+//create buffer for map data, send it on first contact with client
+//need to include way of creating objArrays here
+
 // Initialize the server, returns the socket file descriptor of the binded port.
 int init_server()
 {
+
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     printf("%d\n", sockfd);
     struct sockaddr_in servaddr;
@@ -51,6 +56,41 @@ int init_server()
 
 int main(int argc, char *argv[])
 {
+
+    //MAP STUFF
+    gameObjectArray mapArray;
+    initObjectArray(&mapArray, 2);
+
+    int testY = 0;
+    int testX = 1;
+
+    for (int x = 0; x < 150; x++)
+    {
+        gameObject tempLeft = {testY, 0, mapArray.currID, "<"};
+        addToObjArray(&mapArray, tempLeft);
+        gameObject tempRight = {testY, 300, mapArray.currID, ">"};
+        addToObjArray(&mapArray, tempRight);
+
+        testY++;
+    }
+
+    for (int x = 0; x < 300; x++)
+    {
+
+        gameObject tempTop = {150, testX, mapArray.currID, "_"};
+        addToObjArray(&mapArray, tempTop);
+        gameObject tempBottom = {0, testX, mapArray.currID, "^"};
+        addToObjArray(&mapArray, tempBottom);
+
+        testX++;
+    }
+
+    //creating map buffer
+    char mapBuffer[sizeof(mapArray)];
+    memcpy(&(mapBuffer), &mapArray, sizeof(mapArray));
+
+    //END MAP STUFF
+
     int sockfd;
     char test[20] = "zach";
     //char *hostaddrp;
@@ -133,7 +173,7 @@ int main(int argc, char *argv[])
             //if the player doesn't exist then we append to the playerPacketArray
             if (!checkIfPlayerPacketExists(&playerPacketArray, receivePacket->userName))
             {
-                
+
                 addToArray(&playerPacketArray, *receivePacket);
                 /*
                 packet confirmPack;
@@ -150,7 +190,6 @@ int main(int argc, char *argv[])
                 {
                     printf("Sent confirmation message to client\n");
                 }
-                
 
                 memset(packetBuffer, sizeof(packetBuffer), 1);
                 packetBufferSize = 0;

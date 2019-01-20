@@ -1,13 +1,7 @@
 #ifndef GAME_H
 #define GAME_H
 #include <stdbool.h>
-
-typedef struct
-{
-    int yCoord;
-    int xCoord;
-    char *objectString;
-} gameObject;
+#include "gameObjectArray.h"
 
 // Macros for moves
 #define DOWN 1
@@ -17,6 +11,7 @@ typedef struct
 #define QUIT 5
 
 int runClient(char *userName);
+void addToObjArray(gameObjectArray *a, gameObject objVal);
 void refreshScreen(void);
 int checkChar(char ch);
 void movePlayer(int y, int x, char *val);

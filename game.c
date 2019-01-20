@@ -12,20 +12,50 @@
 #include "bufferManagement.h"
 #include "serverGameLogic.h"
 #include "game.h"
+#include "gameObjectArray.h"
 
 #define PORT 3000
+
 
 WINDOW *mainwin;
 int oldcur;
 
-void initObjArray(gameObject *objArray, int yMax, int xMax)
+/*
+void initObjectArray(gameObjectArray *a, size_t initialSize)
 {
-    for (int i = 0; i < 10; i++)
-    {
-        gameObject temp = {rand() % yMax, rand() % xMax, "(_)"};
-        objArray[i] = temp;
-    }
+    a->size = initialSize;
+    a->array = (gameObject *)malloc(initialSize * sizeof(gameObject));
+    a->used = 0;
+    a->currID = 0;
 }
+
+void addToObjArray(gameObjectArray *a, gameObject objVal)
+{
+    if (a->used == a->size)
+    {
+        a->size *= 2;
+        a->array = (gameObject *)realloc(a->array, a->size * sizeof(gameObject));
+    }
+    a->array[a->used++] = objVal;
+    a->currID++;
+}
+
+gameObject getGameObjectFromArray(gameObjectArray *a, int id)
+{
+    gameObject temp;
+
+    for (int x = 0; x < a->used; x++)
+    {
+
+        if (a->array[x].id == id)
+        {
+            temp = a->array[x];
+            return temp;
+        }
+    }
+
+    return temp;
+} */
 
 void refreshScreen(void)
 {
@@ -107,6 +137,35 @@ int runClient(char *userName)
     Array playerArray;
     initArray(&playerArray, 2);
 
+    gameObjectArray objectArray;
+    initObjectArray(&objectArray, 2);
+
+    //creating border
+    int testY = 0;
+    int testX = 1;
+
+    /*
+    for (int x = 0; x < 150; x++)
+    {
+        gameObject tempLeft = {testY, 0, objectArray.currID, "<"};
+        addToObjArray(&objectArray, tempLeft);
+        gameObject tempRight = {testY, 300, objectArray.currID, ">"};
+        addToObjArray(&objectArray, tempRight);
+
+        testY++;
+    }
+
+    for (int x = 0; x < 300; x++)
+    {
+        
+        gameObject tempTop = {150, testX, objectArray.currID, "_"};
+        addToObjArray(&objectArray, tempTop);
+        gameObject tempBottom = {0, testX, objectArray.currID, "^"};
+        addToObjArray(&objectArray, tempBottom);
+
+        testX++;
+    }*/
+
     // Creating socket file descriptor
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     {
@@ -133,9 +192,6 @@ int runClient(char *userName)
     int yMax, xMax, startY, startX, gy, gx, direction;
     bool canMoveUp, canMoveDown, canMoveLeft, canMoveRight;
 
-    gameObject rock = {10, 20, "(_)"};
-    gameObject *objArray;
-
     getmaxyx(mainwin, yMax, xMax);
 
     startX = xMax / 2;
@@ -143,8 +199,7 @@ int runClient(char *userName)
     gx = startX - 1;
     gy = startY;
 
-    objArray = calloc(10, sizeof(gameObject));
-    initObjArray(objArray, yMax, xMax);
+    //initObjArray(objArray, yMax, xMax);
 
     refreshScreen();
 
@@ -161,14 +216,11 @@ int runClient(char *userName)
         move(startY, startX);
         printw("*");
 
-        if (checkObjInbounds(rock, y, x, yMax, xMax))
-            printObj(rock, y, x);
-
-        for (int j = 0; j < 10; j++)
+        for (int j = 0; j < objectArray.used; j++)
         {
-            if (checkObjInbounds(objArray[j], y, x, yMax, xMax))
+            if (checkObjInbounds(objectArray.array[j], y, x, yMax, xMax))
             {
-                printObj(objArray[j], y, x);
+                printObj(objectArray.array[j], y, x);
                 refresh();
             }
         }
@@ -216,10 +268,6 @@ int runClient(char *userName)
                 gy = startY;
                 gun = '-';
             }
-            else
-            {
-                beep();
-            }
         }
         else
         {
@@ -239,14 +287,15 @@ int runClient(char *userName)
                 for (int i = 0; i < arraySize; i++)
                 {
                     packet temp = getPacketFromBuffer(receiveBuffer, i);
-                    if (!checkIfPlayerPacketExists(&playerArray, temp.userName)) 
+                    if (!checkIfPlayerPacketExists(&playerArray, temp.userName))
                     {
                         /*move(temp.y + y, temp.x + x);
                         printw(temp.userName);
                             printf("%s vs %s\n", a->array[x].userName, userName);    refresh();*/
                         addToArray(&playerArray, temp);
                     }
-                    else{
+                    else
+                    {
                         updateClientInfo(&playerArray, temp);
                     }
                 }
@@ -272,8 +321,6 @@ int runClient(char *userName)
         clear();
         doupdate();
     }
-
-    free(objArray);
     delwin(mainwin);
     endwin();
 

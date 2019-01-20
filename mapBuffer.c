@@ -7,47 +7,46 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include "packet.h"
+#include "gameObjectArray.h"
+#include "mapBuffer.h"
 
-int getArraySize(char * buffer){
+int getArraySize(char *buffer)
+{
     short int tempSize;
     memcpy(&tempSize, &(buffer[0]), sizeof(tempSize));
     return tempSize;
 }
 
-void incrementBufferPacketArraySize(char * buffer){
+void incrementBufferPacketArraySize(char *buffer)
+{
     short int tempSize;
     memcpy(&tempSize, &(buffer[0]), sizeof(tempSize));
     tempSize++;
     memcpy(&(buffer[0]), &tempSize, sizeof(tempSize));
-
 }
 
-packet getPacketFromBuffer(char *buffer, int desiredIndex){
-    packet temp;
+gameObjectArray getArrayFromBuffer(char *buffer, int desiredIndex)
+{
+    gameObjectArray temp;
 
-    //desiredIndex * sizeof(packet) essentially indexes through the buffer for each 
+    //desiredIndex * sizeof(packet) essentially indexes through the buffer for each
     //packet inside the buffer
-    memcpy(&temp, &(buffer[2 + (desiredIndex * sizeof(packet))]), sizeof(packet));
+    memcpy(&temp, &(buffer[2 + (desiredIndex * sizeof(gameObjectArray))]), sizeof(gameObjectArray));
 
     return temp;
 }
 
-void addPacketToBuffer(char *buffer, packet packVal, int * currentIndex){
-    //printf("%d\n", *currentIndex);
-    memcpy(&(buffer[2 + (*currentIndex * sizeof(packet))]), &packVal, sizeof(packet));
+void addArrayToBuffer(char *buffer, gameObjectArray arrayVal, int *currentIndex)
+{
+    memcpy(&(buffer[2]), &arrayVal, sizeof(arrayVal));
     (*currentIndex)++;
     incrementBufferPacketArraySize(buffer);
+    
 }
 
-void printPacket(packet packVal){
-    printf("UserName: %s\nActive: %d\nXCoord: %d\nYCoord: %d\n", packVal.userName, packVal.active, packVal.x, packVal.y);
-}
-
-
-
-/*
-int main(){
+int main()
+{
+    /*
     packet temp = {1, 8, 3, "Zach"};
     packet temp2 = {1,3,2, "Daniel"};
 
@@ -73,6 +72,32 @@ int main(){
     //printf("%d\n", buffer[2]);
     short int tempVal;
     tempVal = getArraySize(buffer);
-    printf("%d\n", tempVal);
+    printf("%d\n", tempVal);*/
 
-}*/
+    gameObject temp = {1, 2, 1, "X"};
+    gameObject temp2 = {3, 4, 2, "Y"};
+
+    gameObjectArray tempArr;
+    initObjectArray(&tempArr, 2);
+
+    addToObjArray(&tempArr, temp);
+    addToObjArray(&tempArr, temp2);
+
+    short int size = 0;
+    int index = 0;
+
+    char buffer[sizeof(size) + sizeof(tempArr)];
+
+
+    buffer[0] = 1;
+    
+    addArrayToBuffer(buffer, tempArr, &index);
+    
+    gameObjectArray getArr;
+
+    getArr = getArrayFromBuffer(buffer, 0);
+
+    printf("%s\n", getArr.array[0].objectString); 
+
+
+}
