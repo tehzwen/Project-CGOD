@@ -10,29 +10,28 @@
 #include "bufferManagement.h"
 #include "serverGameLogic.h"
 #include <stdbool.h>
+#include <errno.h>
 
 #define PORT 3000
 #define MAXLINE 1024
 
 // Initialize the server, returns the socket file descriptor of the binded port.
-int init_server()
+int init_server(struct sockaddr_in *saddr)
 {
-    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-    printf("%d\n", sockfd);
-    struct sockaddr_in servaddr;
-
     // Creating server socket file descriptor
+    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (sockfd < 0)
     {
         perror("socket creation failed");
         exit(EXIT_FAILURE);
     }
 
+    struct sockaddr_in servaddr = *saddr;
     memset(&servaddr, 0, sizeof(servaddr));
 
     // Filling server information
     servaddr.sin_family = AF_INET; // IPv4
-    servaddr.sin_addr.s_addr = INADDR_ANY;
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = htons(PORT);
 
     int bind_ret = bind(sockfd, (const struct sockaddr *)&servaddr,
@@ -51,7 +50,6 @@ int init_server()
 
 int main(int argc, char *argv[])
 {
-    int sockfd;
     char test[20] = "zach";
     //char *hostaddrp;
     //struct hostent *hostp;
@@ -75,32 +73,7 @@ int main(int argc, char *argv[])
     printf("SIZE: %d\n", tempVal);
 
     // Creating socket file descriptor
-
-    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-    {
-        perror("socket creation failed");
-        exit(EXIT_FAILURE);
-    }
-
-    memset(&servaddr, 0, sizeof(servaddr));
-    memset(&cliaddr, 0, sizeof(cliaddr));
-
-    // Filling server information
-    servaddr.sin_family = AF_INET; // IPv4
-    servaddr.sin_addr.s_addr = INADDR_ANY;
-    servaddr.sin_port = htons(PORT);
-
-    // Bind the socket with the server address
-
-    if (bind(sockfd, (const struct sockaddr *)&servaddr,
-             sizeof(servaddr)) < 0)
-    {
-        perror("bind failed");
-        exit(EXIT_FAILURE);
-    }
-
-    //sockfd = init_server();
-
+    int sockfd = init_server(&servaddr);
     socklen_t len;
     ssize_t n;
 
@@ -112,6 +85,10 @@ int main(int argc, char *argv[])
                      &len);
 
         printf("%ld\n", n);
+
+	if (n == -1) {
+		printf("Error receiving from client: %s", strerror(errno));
+	}
 
         //print string message from client
         //printf("server received %ld/%ld bytes\n", sizeof(receivePacket), n);
@@ -156,7 +133,7 @@ int main(int argc, char *argv[])
 
                 for (int i = 0; i < playerPacketArray.used; i++)
                 {
-                    
+
                     if (strcmp(playerPacketArray.array[i].userName, receivePacket->userName) != 0)
                     {
                         addPacketToBuffer(packetBuffer, playerPacketArray.array[i], &packetBufferIndex);
