@@ -11,7 +11,6 @@
 #include <netinet/in.h>
 #include "bufferManagement.h"
 #include "serverGameLogic.h"
-
 #include "game.h"
 
 #define PORT 3000
@@ -178,7 +177,7 @@ int runClient(char *userName)
         printw("%c", gun);
         refresh();
 
-        halfdelay(0.5);
+        halfdelay(1);
         ch = getch();
 
         if (ch != ERR)
