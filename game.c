@@ -10,11 +10,11 @@
 WINDOW *mainwin;
 int oldcur;
 
-void initObjArray(gameObject *objArray)
+void initObjArray(gameObject *objArray, int yMax, int xMax)
 {
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 5000; i++)
     {
-        gameObject temp = {5 + i, 4 + i, "(&)"};
+        gameObject temp = {rand() % yMax, rand() % xMax, "(_)"};
         objArray[i] = temp;
     }
 }
@@ -105,10 +105,13 @@ int runClient(void)
     gy = startY;
     
     objArray = calloc(10, sizeof(gameObject));
-    initObjArray(objArray);
+    initObjArray(objArray, yMax, xMax);
+
+    refreshScreen();
 
     while(1)
     {
+
         refreshScreen();
         move(startY, startX);
         printw("*");
@@ -119,53 +122,66 @@ int runClient(void)
         for (int j = 0; j < 10; j++)
         {
             if (checkObjInbounds(objArray[j], y, x, yMax, xMax))
+            {
                 printObj(objArray[j], y, x);
+                refresh();
+            }
         }
-
-        refresh();
         checkObstacle(&canMoveUp, &canMoveDown, &canMoveLeft, &canMoveRight, startY, startX);
         move(gy, gx);
         printw("%c", gun);
-
         refresh();
+
+        halfdelay(1);
         ch = getch();
-        clear();
 
-        direction = checkChar(ch);
+        if (ch != ERR)
+        {
+            direction = checkChar(ch);
 
-        if (direction == QUIT)
+            if (direction == QUIT)
+            {
+                break;
+            } else if (direction == UP && canMoveUp)
+            {
+                y++;
+                gx = startX;
+                gy = startY - 1;
+                gun = '|';
+            } else if (direction == DOWN && canMoveDown)
+            {
+                y--;
+                gx = startX;
+                gy = startY + 1;
+                gun = '|';
+            } else if (direction == LEFT && canMoveLeft)
+            {
+                x++;
+                gx = startX - 1;
+                gy = startY;
+                gun = '-';
+            } else if (direction == RIGHT && canMoveRight)
+            {
+                x--;
+                gx = startX + 1;
+                gy = startY;
+                gun = '-';
+            } else {
+                beep();
+            }
+        } else
         {
-            break;
-        } else if (direction == UP && canMoveUp)
-        {
-            y++;
-            gx = startX;
-            gy = startY - 1;
-            gun = '|';
-        } else if (direction == DOWN && canMoveDown)
-        {
-            y--;
-            gx = startX;
-            gy = startY + 1;
-            gun = '|';
-        } else if (direction == LEFT && canMoveLeft)
-        {
-            x++;
-            gx = startX - 1;
-            gy = startY;
-            gun = '-';
-        } else if (direction == RIGHT && canMoveRight)
-        {
-            x--;
-            gx = startX + 1;
-            gy = startY;
-            gun = '-';
-        } else{
-            beep();
+            printw("checking");
+            refresh();
+            getch();
         }
+        
 
         refreshScreen();
+        clear();
+        doupdate();
     }
+
     free(objArray);
     delwin(mainwin);
     endwin();

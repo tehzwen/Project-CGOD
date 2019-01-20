@@ -19,7 +19,7 @@ int runClient(void);
 void refreshScreen(void);
 int checkChar(char ch);
 void movePlayer(int y, int x, char *val);
-void initObjArray(gameObject *objArray);
+void initObjArray(gameObject *objArray, int yMax, int xMax);
 bool checkObjInbounds(gameObject obj, int y, int x, int yMax, int xMax);
 void checkObstacle(bool *up, bool *down, bool *left, bool *right, int y, int x);
 
