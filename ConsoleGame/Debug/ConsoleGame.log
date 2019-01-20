@@ -1,0 +1,4 @@
+﻿  game.cpp
+c:\users\andyi\source\repos\consolegame\consolegame\game.cpp(108): warning C4551: function call missing argument list
+c:\users\andyi\source\repos\consolegame\consolegame\game.cpp(123): warning C4551: function call missing argument list
+  ConsoleGame.vcxproj -> C:\Users\andyi\source\repos\ConsoleGame\Debug\ConsoleGame.exe
