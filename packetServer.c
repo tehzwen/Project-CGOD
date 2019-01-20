@@ -69,8 +69,13 @@ int main(int argc, char *argv[])
 	packet *receivePacket = calloc(0, sizeof(packet));
 	if (receivePacket == NULL) {
 		perror("receivePacket");
-		exit(EXIT_FAILURE);
+		return -1;
 	}
+
+	//creates array size 10 to hold packets that are for
+	//existing players on the server
+	Array playerPacketArray;
+	initArray(&playerPacketArray, 2);
 
 	//creating sample packets and packet buffer
 	char packetBuffer[sizeof(short int) + sizeof(packet) * 3];
@@ -186,9 +191,7 @@ int main(int argc, char *argv[])
 				n = sendto(sockfd, (const char *)packetBuffer, sizeof(packetBuffer), MSG_CONFIRM, (const struct sockaddr *)&cliaddr, sizeof(cliaddr));
 
 				if (n > 0)
-				{
 					printf("Sent update fetch message to client\n");
-				}
 
 				memset(packetBuffer, sizeof(packetBuffer), 1);
 				packetBufferSize = 0;
@@ -202,9 +205,7 @@ int main(int argc, char *argv[])
 		//print the playerarray if it is not empty
 
 		if (playerPacketArray.used > 0)
-		{
 			printf("%s\n", playerPacketArray.array[0].userName);
-		}
 
 		//send packetBuffer Array to client
 		//int y = sendto(sockfd, (const char *)packetBuffer, sizeof(packetBuffer), MSG_CONFIRM, (const struct sockaddr *)&cliaddr, sizeof(cliaddr));
